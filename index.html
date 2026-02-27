@@ -411,6 +411,34 @@ tr:hover td { background:var(--primary-l); }
         </div>
       </div>
 
+      <!-- OPERADOR RESPONSABLE -->
+      <div id="operadorSection" style="display:none;">
+        <div class="field">
+          <label>Operador Responsable del Registro</label>
+          <select id="inputOperador">
+            <option value="">Seleccione operador...</option>
+            <optgroup label="Operadores de Monitoreo - Centro de Cómputo">
+              <option value="FLORES QUILLAS, RUBEN ANTONY">FLORES QUILLAS, RUBEN ANTONY</option>
+              <option value="HINOJOSA ESPINOZA, CARLOS ENRIQUE">HINOJOSA ESPINOZA, CARLOS ENRIQUE</option>
+              <option value="LOPEZ GUERRERO, ERICK RODRIGO">LOPEZ GUERRERO, ERICK RODRIGO</option>
+              <option value="NARVAEZ SANTA CRUZ, MICHAEL CRISTOBAL">NARVAEZ SANTA CRUZ, MICHAEL CRISTOBAL</option>
+              <option value="PASTOR LLERENA, ADRIAN ANTONIO">PASTOR LLERENA, ADRIAN ANTONIO</option>
+              <option value="ROMERO MAYO, HECTOR ALEX">ROMERO MAYO, HECTOR ALEX</option>
+              <option value="RUIZ QUISPE, MANUEL EDUARDO">RUIZ QUISPE, MANUEL EDUARDO</option>
+              <option value="SALAZAR ROSALES, FLORENCIO SEGUNDO">SALAZAR ROSALES, FLORENCIO SEGUNDO</option>
+              <option value="SALAZAR VASQUEZ, EDWARD SANTIAGO">SALAZAR VASQUEZ, EDWARD SANTIAGO</option>
+              <option value="TAYPE VILLAVICENCIO, LUIS GIANCARLO">TAYPE VILLAVICENCIO, LUIS GIANCARLO</option>
+            </optgroup>
+            <optgroup label="Operadores de Telecom">
+              <option value="AREVALO LEÓN, CHRISTOFER">AREVALO LEÓN, CHRISTOFER</option>
+              <option value="BARDALES SAUCEDO, JORGE">BARDALES SAUCEDO, JORGE</option>
+              <option value="QUILLATUPA AGUIRRE, LUIS">QUILLATUPA AGUIRRE, LUIS</option>
+              <option value="HERNÁNDEZ CARRASCO, JORGE">HERNÁNDEZ CARRASCO, JORGE</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+
       <!-- SIGNATURE -->
       <div class="sig-wrap" id="sigSection" style="display:none;">
         <div class="sig-label">Firma del visitante</div>
@@ -718,6 +746,7 @@ function setType(type) {
   document.getElementById('formExterno').style.display = type==='externo' ? 'block' : 'none';
   document.getElementById('userPreview').classList.remove('show');
   document.getElementById('motivoSection').style.display = type==='externo' ? 'block' : 'none';
+  document.getElementById('operadorSection').style.display = type==='externo' ? 'block' : 'none';
   if(type==='externo') {
     document.getElementById('sigSection').style.display = 'block';
     document.getElementById('confirmSection').style.display = 'block';
@@ -739,6 +768,7 @@ function buscarFicha() {
     showToast('Ficha no encontrada en la base de datos', true);
     document.getElementById('userPreview').classList.remove('show');
     document.getElementById('motivoSection').style.display = 'none';
+    document.getElementById('operadorSection').style.display = 'none';
     document.getElementById('sigSection').style.display = 'none';
     document.getElementById('confirmSection').style.display = 'none';
     return;
@@ -777,6 +807,7 @@ function buscarFicha() {
   document.getElementById('upSede').textContent = sede;
   document.getElementById('userPreview').classList.add('show');
   document.getElementById('motivoSection').style.display = 'block';
+  document.getElementById('operadorSection').style.display = 'block';
   document.getElementById('sigSection').style.display = 'block';
   document.getElementById('confirmSection').style.display = 'block';
   clearSig();
@@ -876,10 +907,14 @@ function confirmarIngreso() {
     };
   }
 
+  const operador = document.getElementById('inputOperador').value;
+  if(!operador) { showToast('Seleccione el operador responsable', true); return; }
+
   const now = new Date();
   const reg = {
     id: Date.now(),
     ...currentUser,
+    operador: operador,
     firma: getSignatureData(),
     horaIngreso: now.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'}),
     fechaIngreso: now.toLocaleDateString('es-PE'),
@@ -905,6 +940,8 @@ function resetForm() {
   document.getElementById('inputOtroMotivoGeneral').value = '';
   document.getElementById('fieldOtroMotivoGeneral').style.display = 'none';
   document.getElementById('motivoSection').style.display = currentType==='externo' ? 'block' : 'none';
+  document.getElementById('operadorSection').style.display = currentType==='externo' ? 'block' : 'none';
+  // No resetear operador: se mantiene el último seleccionado para agilizar registros consecutivos
   document.getElementById('inputNombres').value = '';
   document.getElementById('inputEmpresa').value = '';
   document.getElementById('inputVisita').value = '';
@@ -921,6 +958,8 @@ function resetForm() {
 // ===================== REGISTROS STORAGE =====================
 function saveRegistros() { try { localStorage.setItem('sedapal_acceso_cm', JSON.stringify(registros)); } catch(e){} updateStats(); }
 function loadRegistros() {
+  // Limpieza mensual automática del localStorage
+  checkMonthlyClear();
   try {
     const d = localStorage.getItem('sedapal_acceso_cm');
     if(d) registros = JSON.parse(d);
@@ -929,6 +968,19 @@ function loadRegistros() {
     registros = registros.filter(r => r.fechaIngreso === today);
   } catch(e) { registros = []; }
   updateStats();
+}
+
+function checkMonthlyClear() {
+  const now = new Date();
+  const currentMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const lastMonth = localStorage.getItem('sedapal_acceso_last_month');
+  if(lastMonth && lastMonth !== currentMonth) {
+    // Nuevo mes detectado: limpiar registros del localStorage
+    localStorage.removeItem('sedapal_acceso_cm');
+    registros = [];
+    console.log('🧹 Limpieza mensual automática: datos del mes anterior eliminados del navegador');
+  }
+  localStorage.setItem('sedapal_acceso_last_month', currentMonth);
 }
 
 function updateStats() {
@@ -972,13 +1024,14 @@ function renderBitacora() {
       <td style="font-family:var(--mono);font-size:11px;">${id_col}</td>
       <td style="font-size:12px;">${r.nombre}</td>
       <td>${r.tipo==='EXTERNO'?(r.empresa||'—'):(r.unidadOrg||'—')}</td>
+      <td style="font-size:11px;">${r.operador||'—'}</td>
       <td>${estado}</td>
       <td>${salBtn}</td>
     </tr>`;
   }).join('');
 
   document.getElementById('bitacoraContent').innerHTML = `<div class="tbl-wrap"><table>
-    <thead><tr><th>Hora</th><th>Tipo</th><th>ID</th><th>Nombre</th><th>Área/Empresa</th><th>Estado</th><th></th></tr></thead>
+    <thead><tr><th>Hora</th><th>Tipo</th><th>ID</th><th>Nombre</th><th>Área/Empresa</th><th>Operador</th><th>Estado</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
@@ -1051,13 +1104,14 @@ function exportPDF() {
     r.nombre,
     r.tipo==='SEDAPAL'?(r.unidadOrg||''):(r.empresa||''),
     r.motivo||'—',
+    r.operador||'—',
     r.horaSalida||'En zona',
     r.horaSalida ? (r.permanencia||'—') : getLivePermanencia(r.timestamp)
   ]);
 
   doc.autoTable({
     startY: 40,
-    head: [['N°','Ingreso','Tipo','Ficha/DNI','Nombre Completo','Área/Empresa','Motivo','Salida','Permanencia']],
+    head: [['N°','Ingreso','Tipo','Ficha/DNI','Nombre Completo','Área/Empresa','Motivo','Operador','Salida','Permanencia']],
     body: tableData,
     styles: { fontSize:8, cellPadding:3, font:'helvetica' },
     headStyles: { fillColor:[0,71,171], textColor:[255,255,255], fontStyle:'bold', fontSize:8 },
@@ -1077,12 +1131,25 @@ function exportPDF() {
 
   doc.save('Bitacora_Acceso_CM_'+new Date().toISOString().slice(0,10)+'.pdf');
   showToast('📄 PDF descargado');
+
+  // Limpieza semanal: al exportar PDF se limpia la bitácora
+  const dayOfWeek = new Date().getDay(); // 0=Dom, 6=Sab
+  if(dayOfWeek === 0 || dayOfWeek === 6) {
+    setTimeout(() => {
+      if(confirm('Es fin de semana. ¿Desea limpiar la bitácora después de exportar el PDF?\n\n(Los datos ya están respaldados en Google Sheets y en el PDF descargado)')) {
+        registros = [];
+        saveRegistros();
+        renderBitacora();
+        showToast('🧹 Bitácora limpiada después de exportar PDF');
+      }
+    }, 1000);
+  }
 }
 
 // ===================== EXPORT CSV =====================
 function exportCSV() {
   if(!registros.length) { showToast('No hay registros para exportar', true); return; }
-  const header = 'Fecha;Hora Ingreso;Tipo;Ficha/DNI;Nombre;Cargo/Empresa;Unidad Orgánica/Motivo;Hora Salida;Permanencia\n';
+  const header = 'Fecha;Hora Ingreso;Tipo;Ficha/DNI;Nombre;Cargo/Empresa;Unidad Orgánica/Motivo;Operador;Hora Salida;Permanencia\n';
   const rows = registros.map(r => {
     const perm = r.horaSalida ? (r.permanencia||'—') : getLivePermanencia(r.timestamp);
     return [
@@ -1093,6 +1160,7 @@ function exportCSV() {
       r.nombre,
       r.tipo==='SEDAPAL'?(r.cargo||''):r.empresa,
       r.motivo||'',
+      r.operador||'',
       r.horaSalida||'En zona',
       perm
     ].join(';');
@@ -1136,7 +1204,8 @@ async function sendToGAS(reg) {
       unidadOrg: reg.equipo || reg.unidadOrg || '',
       motivo: reg.motivo || '',
       visitaA: reg.visitaA || '',
-      firma: reg.firma ? 'SI' : 'NO'
+      firma: reg.firma ? 'SI' : 'NO',
+      operador: reg.operador || ''
     };
     await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
   } catch(e) { console.warn('GAS send error:', e); }
