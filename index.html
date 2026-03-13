@@ -108,7 +108,7 @@ body { font-family:var(--font); background:var(--bg); color:var(--text); min-hei
 .card-desc { font-size:12px; color:var(--muted); margin-bottom:16px; }
 
 /* TYPE SELECTOR */
-.type-sel { display:flex; gap:8px; margin-bottom:16px; }
+.type-sel { display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-bottom:16px; }
 .type-btn {
   flex:1; padding:14px 10px; border-radius:var(--rad-sm); border:2px solid var(--border);
   background:var(--surf); cursor:pointer; text-align:center; transition:all 0.25s;
@@ -328,12 +328,17 @@ tr:hover td { background:var(--primary-l); }
       <div class="type-sel">
         <div class="type-btn active" id="typeSed" onclick="setType('sedapal')">
           <div class="icon">🏢</div>
-          <div class="label">Trabajador</div>
-          <div class="sublabel">Personal SEDAPAL</div>
+          <div class="label">Personal Autorizado</div>
+          <div class="sublabel">ETIC - SEDAPAL</div>
+        </div>
+        <div class="type-btn" id="typeVInt" onclick="setType('visitante_int')">
+          <div class="icon">🔄</div>
+          <div class="label">Visitante Interno</div>
+          <div class="sublabel">Trabajador SEDAPAL</div>
         </div>
         <div class="type-btn" id="typeExt" onclick="setType('externo')">
           <div class="icon">👤</div>
-          <div class="label">Visitante</div>
+          <div class="label">Visitante Externo</div>
           <div class="sublabel">Personal externo</div>
         </div>
         <div class="type-btn" id="typeOp" onclick="setType('operador')">
@@ -346,13 +351,47 @@ tr:hover td { background:var(--primary-l); }
       <!-- SEDAPAL FORM -->
       <div id="formSedapal">
         <div class="field">
-          <label>Número de Ficha</label>
-          <input type="text" id="inputFicha" class="mono" placeholder="Ej: 10028" inputmode="numeric" maxlength="6" autocomplete="off">
+          <label>Personal Autorizado ETIC</label>
+          <select id="inputPersonalAutorizado" onchange="seleccionarAutorizado()">
+            <option value="">Seleccione personal...</option>
+            <option value="12875">ASCHIERO PEREA, ALEJANDRO RENE</option>
+            <option value="14817">ASIN VELA, CLAUDIA PAMELA</option>
+            <option value="12861">AVILA RUIZ, ALINA MARTHA</option>
+            <option value="16236">CARMEN ROSA, HUAMAN OCHOA</option>
+            <option value="16320">CARRANZA VERAMENDI, JAVIER CONSTANTINO</option>
+            <option value="16238">CARRERA SANCHEZ, GERMAN</option>
+            <option value="12182">CHUQUILLANQUI DOMINGUEZ, EDWIN FIDEL</option>
+            <option value="15764">DIONICIO ANTUNEZ, GRECIA MELISSA</option>
+            <option value="12867">FIGUEROA CALATAYUD, LUIS DAMIAN</option>
+            <option value="14070">GONZALES SOTO, WILFREDO MARTIN</option>
+            <option value="14978">HUIZA LITANO, CESAR ENRIQUE</option>
+            <option value="13985">LAZO HINOJOSA, LUIS HUMBERTO</option>
+            <option value="24881">LEYVA HERRERA, KILDER ORLANDO</option>
+            <option value="15745">MARIN VASQUEZ, ANDERSON OMAR</option>
+            <option value="12868">MARTICORENA GRANDA, ROBERTO CARLOS</option>
+            <option value="15188">PALOMINO RODRIGUEZ, JULIO CESAR</option>
+            <option value="12470">REYES VIGO, LUIS ALBERTO</option>
+            <option value="13862">RODRIGUEZ ROQUE, MARK VALERY</option>
+            <option value="16132">SILUPÚ SANDOVAL, KEYTIN BRIGGIT</option>
+            <option value="15785">VICENTE LEIVA, PERCY DAVID</option>
+            <option value="12869">YABAR CARDOZO, JUAN ALFREDO</option>
+          </select>
         </div>
-        <button class="btn btn-primary" onclick="buscarFicha()">🔍 Buscar Ficha</button>
+        <!-- Hidden ficha input for compatibility -->
+        <input type="hidden" id="inputFicha">
       </div>
 
       <!-- EXTERNO FORM -->
+      <!-- VISITANTE INTERNO FORM (trabajador SEDAPAL visitando) -->
+      <div id="formVisitanteInt" style="display:none;">
+        <div class="field">
+          <label>Número de Ficha</label>
+          <input type="text" id="inputFichaVInt" class="mono" placeholder="Ej: 10028" inputmode="numeric" maxlength="6" autocomplete="off">
+          <button class="btn btn-primary btn-sm" onclick="buscarFichaVInt()" style="margin-top:6px;width:100%;">🔍 Buscar</button>
+        </div>
+      </div>
+
+      <!-- VISITANTE EXTERNO FORM -->
       <div id="formExterno" style="display:none;">
         <div class="field">
           <label>DNI</label>
@@ -371,8 +410,31 @@ tr:hover td { background:var(--primary-l); }
           <input type="text" id="inputEmpresa" placeholder="Empresa a la que pertenece">
         </div>
         <div class="field">
-          <label>Persona a quien visita</label>
-          <input type="text" id="inputVisita" placeholder="Nombre del trabajador SEDAPAL">
+          <label>Persona quien autoriza el ingreso</label>
+          <select id="inputVisita">
+            <option value="">Seleccione persona...</option>
+            <option value="CHUQUILLANQUI DOMINGUEZ, EDWIN FIDEL (12182)">CHUQUILLANQUI DOMINGUEZ, EDWIN FIDEL</option>
+            <option value="REYES VIGO, LUIS ALBERTO (12470)">REYES VIGO, LUIS ALBERTO</option>
+            <option value="ASCHIERO PEREA, ALEJANDRO RENE (12875)">ASCHIERO PEREA, ALEJANDRO RENE</option>
+            <option value="LAZO HINOJOSA, LUIS HUMBERTO (13985)">LAZO HINOJOSA, LUIS HUMBERTO</option>
+            <option value="RODRIGUEZ ROQUE, MARK VALERY (13862)">RODRIGUEZ ROQUE, MARK VALERY</option>
+            <option value="CARMEN ROSA, HUAMAN OCHOA (16236)">CARMEN ROSA, HUAMAN OCHOA</option>
+            <option value="SILUPÚ SANDOVAL, KEYTIN BRIGGIT (16132)">SILUPÚ SANDOVAL, KEYTIN BRIGGIT</option>
+            <option value="GONZALES SOTO, WILFREDO MARTIN (14070)">GONZALES SOTO, WILFREDO MARTIN</option>
+            <option value="CARRERA SANCHEZ, GERMÁN (16238)">CARRERA SANCHEZ, GERMÁN</option>
+            <option value="LEYVA HERRERA, KILDER ORLANDO (24881)">LEYVA HERRERA, KILDER ORLANDO</option>
+            <option value="AVILA RUIZ, ALINA MARTHA (12861)">AVILA RUIZ, ALINA MARTHA</option>
+            <option value="FIGUEROA CALATAYUD, LUIS DAMIAN (12867)">FIGUEROA CALATAYUD, LUIS DAMIAN</option>
+            <option value="MARTICORENA GRANDA, ROBERTO CARLOS (12868)">MARTICORENA GRANDA, ROBERTO CARLOS</option>
+            <option value="YABAR CARDOZO, JUAN ALFREDO (12869)">YABAR CARDOZO, JUAN ALFREDO</option>
+            <option value="ASIN VELA, CLAUDIA PAMELA (14817)">ASIN VELA, CLAUDIA PAMELA</option>
+            <option value="HUIZA LITANO, CESAR ENRIQUE (14978)">HUIZA LITANO, CESAR ENRIQUE</option>
+            <option value="MARIN VASQUEZ, ANDERSON OMAR (15745)">MARIN VASQUEZ, ANDERSON OMAR</option>
+            <option value="DIONICIO ANTUNEZ, GRECIA MELISSA (15764)">DIONICIO ANTUNEZ, GRECIA MELISSA</option>
+            <option value="VICENTE LEIVA, PERCY DAVID (15785)">VICENTE LEIVA, PERCY DAVID</option>
+            <option value="PALOMINO RODRIGUEZ, JULIO CESAR (15188)">PALOMINO RODRIGUEZ, JULIO CESAR</option>
+            <option value="CARRANZA VERAMENDI, JAVIER CONSTANTINO (16320)">CARRANZA VERAMENDI, JAVIER CONSTANTINO</option>
+          </select>
         </div>
       </div>
 
@@ -492,7 +554,7 @@ tr:hover td { background:var(--primary-l); }
 
       <!-- CONFIRM BUTTON -->
       <div id="confirmSection" style="display:none; margin-top:10px;">
-        <button class="btn btn-success" onclick="confirmarIngreso()">✅ Confirmar Ingreso</button>
+        <button class="btn btn-success" id="btnConfirmar" onclick="confirmarIngreso()">✅ Confirmar Ingreso</button>
       </div>
     </div>
   </div>
@@ -781,6 +843,7 @@ async function init() {
 
   // Enter key on ficha
   document.getElementById('inputFicha').addEventListener('keypress', e => { if(e.key==='Enter') buscarFicha(); });
+  document.getElementById('inputFichaVInt').addEventListener('keypress', e => { if(e.key==='Enter') buscarFichaVInt(); });
   document.getElementById('inputMotivoGeneral').addEventListener('change', e => {
     document.getElementById('fieldOtroMotivoGeneral').style.display = e.target.value === 'Otro' ? 'block' : 'none';
   });
@@ -808,21 +871,24 @@ function switchTab(tab) {
 function setType(type) {
   currentType = type;
   document.getElementById('typeSed').classList.toggle('active', type==='sedapal');
+  document.getElementById('typeVInt').classList.toggle('active', type==='visitante_int');
   document.getElementById('typeExt').classList.toggle('active', type==='externo');
   document.getElementById('typeOp').classList.toggle('active', type==='operador');
   document.getElementById('formSedapal').style.display = type==='sedapal' ? 'block' : 'none';
+  document.getElementById('formVisitanteInt').style.display = type==='visitante_int' ? 'block' : 'none';
   document.getElementById('formExterno').style.display = type==='externo' ? 'block' : 'none';
   document.getElementById('formOperador').style.display = type==='operador' ? 'block' : 'none';
   document.getElementById('userPreview').classList.remove('show');
-  document.getElementById('motivoSection').style.display = type==='externo' ? 'block' : 'none';
-  document.getElementById('operadorSection').style.display = (type==='externo') ? 'block' : 'none';
-  if(type==='externo') {
-    document.getElementById('sigSection').style.display = 'block';
-    document.getElementById('confirmSection').style.display = 'block';
+  document.getElementById('motivoSection').style.display = (type==='externo' || type==='visitante_int') ? 'block' : 'none';
+  document.getElementById('operadorSection').style.display = (type==='externo' || type==='visitante_int') ? 'block' : 'none';
+  if(type==='externo' || type==='visitante_int') {
+    document.getElementById('sigSection').style.display = type==='externo' ? 'block' : 'none';
+    document.getElementById('confirmSection').style.display = type==='externo' ? 'block' : 'none';
   } else if(type==='operador') {
     document.getElementById('sigSection').style.display = 'block';
     document.getElementById('confirmSection').style.display = 'block';
     document.getElementById('operadorSection').style.display = 'none';
+    document.getElementById('motivoSection').style.display = 'none';
     document.getElementById('opAccion').value = '';
     document.getElementById('btnOpEntrada').style.opacity = '.5';
     document.getElementById('btnOpSalida').style.opacity = '.5';
@@ -841,6 +907,21 @@ function setOpAccion(accion) {
 }
 
 // ===================== SEARCH FICHA =====================
+function seleccionarAutorizado() {
+  const ficha = document.getElementById('inputPersonalAutorizado').value;
+  if(!ficha) {
+    document.getElementById('userPreview').classList.remove('show');
+    document.getElementById('motivoSection').style.display = 'none';
+    document.getElementById('operadorSection').style.display = 'none';
+    document.getElementById('sigSection').style.display = 'none';
+    document.getElementById('confirmSection').style.display = 'none';
+    currentUser = null;
+    return;
+  }
+  document.getElementById('inputFicha').value = ficha;
+  buscarFicha();
+}
+
 function buscarFicha() {
   const ficha = document.getElementById('inputFicha').value.trim();
   if(!ficha) { showToast('Ingrese un número de ficha', true); return; }
@@ -882,6 +963,72 @@ function buscarFicha() {
     cargo: emp.c || '',
     ceCo: emp.cc || '',
     nombreCeCo: emp.c || '',
+    codGestion: emp.cg || '',
+    sigla: sigla,
+    equipo: emp.u || '',
+    unidadOrg: emp.u || '',
+    sede: sede
+  };
+
+  document.getElementById('upAvatar').textContent = initials;
+  document.getElementById('upName').textContent = nombre;
+  document.getElementById('upCargo').textContent = emp.c || '';
+  document.getElementById('upFicha').textContent = ficha;
+  document.getElementById('upSigla').textContent = sigla;
+  document.getElementById('upEquipo').textContent = emp.u || '';
+  document.getElementById('upSede').textContent = sede;
+  document.getElementById('userPreview').classList.add('show');
+  document.getElementById('motivoSection').style.display = 'block';
+  document.getElementById('operadorSection').style.display = 'block';
+  document.getElementById('sigSection').style.display = 'block';
+  document.getElementById('confirmSection').style.display = 'block';
+  clearSig();
+}
+
+// ===================== BUSCAR FICHA VISITANTE INTERNO =====================
+function buscarFichaVInt() {
+  const ficha = document.getElementById('inputFichaVInt').value.trim();
+  if(!ficha) { showToast('Ingrese un número de ficha', true); return; }
+
+  const emp = EMPLOYEES[ficha];
+  if(!emp) {
+    showToast('Ficha no encontrada en la base de datos', true);
+    document.getElementById('userPreview').classList.remove('show');
+    document.getElementById('motivoSection').style.display = 'none';
+    document.getElementById('operadorSection').style.display = 'none';
+    document.getElementById('sigSection').style.display = 'none';
+    document.getElementById('confirmSection').style.display = 'none';
+    return;
+  }
+
+  // Validar que no tenga un registro abierto
+  const regAbierto = registros.find(r => r.tipo==='VISITANTE_INT' && r.ficha===ficha && !r.horaSalida);
+  if(regAbierto) {
+    showToast('⚠️ Ya tiene un registro abierto (ingreso: '+regAbierto.horaIngreso+'). Debe registrar su salida primero.', true);
+    return;
+  }
+
+  const parts = (emp.a || '').split(',');
+  const apellidos = (parts[0] || '').trim();
+  const nombres = (parts[1] || '').trim();
+  const apParts = apellidos.split(' ');
+  const apPat = apParts[0] || '';
+  const apMat = apParts.slice(1).join(' ') || '';
+  const nombre = nombres + ' ' + apellidos;
+  const initials = (nombres[0]||'')+(apPat[0]||'');
+  const extra = EXTRA[ficha] || ['',''];
+  const sede = extra[0] || 'No registrada';
+  const sigla = extra[1] || SIGLAS[emp.cg] || emp.cg || '';
+
+  currentUser = {
+    tipo: 'VISITANTE_INT',
+    ficha: ficha,
+    nombre: nombre,
+    apPat: apPat,
+    apMat: apMat,
+    nombres: nombres,
+    cargo: emp.c || '',
+    ceCo: emp.cc || '',
     codGestion: emp.cg || '',
     sigla: sigla,
     equipo: emp.u || '',
@@ -951,7 +1098,22 @@ function getSignatureData() {
 }
 
 // ===================== CONFIRM INGRESO =====================
+let isProcessing = false;
 async function confirmarIngreso() {
+  if(isProcessing) return;
+  isProcessing = true;
+  const btnConf = document.getElementById('btnConfirmar');
+  if(btnConf) { btnConf.disabled = true; btnConf.textContent = '⏳ Procesando...'; }
+
+  try { await _confirmarIngreso(); } catch(e) { console.error(e); }
+
+  setTimeout(() => {
+    isProcessing = false;
+    if(btnConf) { btnConf.disabled = false; btnConf.textContent = '✅ Confirmar Ingreso'; }
+  }, 2000);
+}
+
+async function _confirmarIngreso() {
   // TIPO OPERADOR
   if(currentType === 'operador') {
     const opNombre = document.getElementById('inputOperadorTurno').value;
@@ -965,40 +1127,41 @@ async function confirmarIngreso() {
     const hora = now.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
     const fecha = now.toLocaleDateString('es-PE');
 
-    // Enviar a Google Sheets
     const gasUrl = getGASUrl();
-    if(gasUrl) {
+    if(!gasUrl) { showToast('Configure la URL de Google Sheets primero', true); return; }
+
+    // Verificar en Google Sheets si ya tiene entrada abierta (prevenir duplicados)
+    if(opAccion === 'entrada') {
       try {
-        if(opAccion === 'entrada') {
-          await fetch(gasUrl, {
-            method:'POST', headers:{'Content-Type':'text/plain'},
-            body:JSON.stringify({action:'turno_entrada', nombre:opNombre, horaEntrada:hora, fecha:fecha, firma:firmaData?'SI':'NO'})
-          });
-        } else {
-          await fetch(gasUrl, {
-            method:'POST', headers:{'Content-Type':'text/plain'},
-            body:JSON.stringify({action:'turno_salida', nombre:opNombre, horaSalida:hora, permanencia:'', fecha:fecha, firma:firmaData?'SI':'NO'})
-          });
+        showToast('🔍 Verificando...');
+        const checkResp = await fetch(gasUrl, {
+          method:'POST', headers:{'Content-Type':'text/plain'},
+          body:JSON.stringify({action:'verificar_turno', nombre:opNombre})
+        });
+        const checkResult = await checkResp.json();
+        if(checkResult.status === 'duplicado') {
+          showToast('🚫 ' + opNombre + ' ya tiene entrada registrada a las ' + (checkResult.horaEntrada||'--') + '. Debe registrar salida primero.', true);
+          return;
         }
-      } catch(e) { console.warn('GAS turno error:', e); }
+      } catch(e) { console.warn('Verificación turno error:', e); }
     }
 
-    // Guardar también en registro local para la bitácora
-    const reg = {
-      id: Date.now(),
-      tipo: 'OPERADOR',
-      nombre: opNombre,
-      motivo: opAccion === 'entrada' ? 'Inicio de turno' : 'Fin de turno',
-      firma: firmaData,
-      horaIngreso: hora,
-      fechaIngreso: fecha,
-      timestamp: now.toISOString(),
-      horaSalida: opAccion === 'salida' ? hora : null,
-      operador: opNombre
-    };
-    registros.push(reg);
-    saveRegistros();
-    updateStats();
+    // Enviar a Google Sheets
+    try {
+      if(opAccion === 'entrada') {
+        await fetch(gasUrl, {
+          method:'POST', headers:{'Content-Type':'text/plain'},
+          body:JSON.stringify({action:'turno_entrada', nombre:opNombre, horaEntrada:hora, fecha:fecha, firma:firmaData?'SI':'NO'})
+        });
+      } else {
+        await fetch(gasUrl, {
+          method:'POST', headers:{'Content-Type':'text/plain'},
+          body:JSON.stringify({action:'turno_salida', nombre:opNombre, horaSalida:hora, permanencia:'', fecha:fecha, firma:firmaData?'SI':'NO'})
+        });
+      }
+    } catch(e) { console.warn('GAS turno error:', e); }
+
+    // NO guardar en bitácora local — solo se registra en Google Sheets (hoja TURNOS_OPERADORES)
 
     const emoji = opAccion === 'entrada' ? '🟢' : '🔴';
     showToast(emoji + ' ' + opNombre + ' — ' + (opAccion === 'entrada' ? 'Entrada' : 'Salida') + ' registrada a las ' + hora);
@@ -1012,15 +1175,16 @@ async function confirmarIngreso() {
     return;
   }
 
-  if(currentType === 'sedapal') {
+  if(currentType === 'sedapal' || currentType === 'visitante_int') {
     if(!currentUser) { showToast('Busque una ficha primero', true); return; }
     let motivoSed = document.getElementById('inputMotivoGeneral').value;
     if(motivoSed === 'Otro') motivoSed = document.getElementById('inputOtroMotivoGeneral').value.trim();
     if(!motivoSed) { showToast('Seleccione el motivo de la visita', true); return; }
     currentUser.motivo = motivoSed;
 
-    // Validar localmente primero
-    const regAbierto = registros.find(r => r.tipo==='SEDAPAL' && r.ficha===currentUser.ficha && !r.horaSalida);
+    // Validar que no tenga un registro abierto
+    const tipoCheck = currentType === 'visitante_int' ? 'VISITANTE_INT' : 'SEDAPAL';
+    const regAbierto = registros.find(r => r.tipo===tipoCheck && r.ficha===currentUser.ficha && !r.horaSalida);
     if(regAbierto) {
       showToast('⚠️ Ya tiene un registro abierto (ingreso: '+regAbierto.horaIngreso+'). Debe registrar su salida primero.', true);
       return;
@@ -1106,13 +1270,16 @@ function resetForm() {
   currentUser = null;
   hasSigned = false;
   document.getElementById('inputFicha').value = '';
+  document.getElementById('inputPersonalAutorizado').value = '';
+  document.getElementById('inputFichaVInt').value = '';
   document.getElementById('inputDNI').value = '';
   document.getElementById('inputApellidos').value = '';
   document.getElementById('inputMotivoGeneral').value = '';
   document.getElementById('inputOtroMotivoGeneral').value = '';
   document.getElementById('fieldOtroMotivoGeneral').style.display = 'none';
-  document.getElementById('motivoSection').style.display = currentType==='externo' ? 'block' : 'none';
-  document.getElementById('operadorSection').style.display = currentType==='externo' ? 'block' : 'none';
+  const showMotivo = (currentType==='externo' || currentType==='visitante_int');
+  document.getElementById('motivoSection').style.display = showMotivo ? 'block' : 'none';
+  document.getElementById('operadorSection').style.display = showMotivo ? 'block' : 'none';
   document.getElementById('inputNombres').value = '';
   document.getElementById('inputEmpresa').value = '';
   document.getElementById('inputVisita').value = '';
@@ -1121,6 +1288,7 @@ function resetForm() {
   document.getElementById('sigSection').style.display = showSig ? 'block' : 'none';
   document.getElementById('confirmSection').style.display = showSig ? 'block' : 'none';
   document.getElementById('formOperador').style.display = currentType==='operador' ? 'block' : 'none';
+  document.getElementById('formVisitanteInt').style.display = currentType==='visitante_int' ? 'block' : 'none';
   clearSig();
 }
 
@@ -1184,7 +1352,7 @@ function renderBitacora() {
     const estado = r.horaSalida
       ? `<span class="badge badge-out">Salió ${r.horaSalida}</span><div style="font-size:10px;color:var(--muted);margin-top:2px;">⏱ ${perm}</div>`
       : `<span class="badge badge-in">En zona</span><div style="font-size:10px;color:var(--success);margin-top:2px;">⏱ ${perm}</div>`;
-    const tipo = r.tipo==='SEDAPAL' ? `<span class="badge badge-sed">SEDAPAL</span>` : r.tipo==='OPERADOR' ? `<span class="badge" style="background:rgba(139,92,246,.15);color:#a78bfa;">Operador</span>` : `<span class="badge badge-ext">Externo</span>`;
+    const tipo = r.tipo==='SEDAPAL' ? `<span class="badge badge-sed">SEDAPAL</span>` : r.tipo==='VISITANTE_INT' ? `<span class="badge" style="background:rgba(6,182,212,.15);color:#22d3ee;">Visitante Int.</span>` : r.tipo==='OPERADOR' ? `<span class="badge" style="background:rgba(139,92,246,.15);color:#a78bfa;">Operador</span>` : `<span class="badge badge-ext">Externo</span>`;
     const id_col = r.tipo==='SEDAPAL' ? r.ficha : r.dni;
     const salBtn = r.horaSalida ? '' : `<button class="btn btn-danger btn-sm" onclick="regSalida(${r.id})" style="font-size:10px;padding:5px 10px;">🚪 Salida</button>`;
     return `<tr>
