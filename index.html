@@ -491,6 +491,35 @@ tr:hover td { background:var(--primary-l); }
         <input type="hidden" id="opAccion" value="">
       </div>
 
+      <!-- PERSONA QUIEN AUTORIZA (for visitante interno) -->
+      <div class="field" id="fieldAutorizaVInt" style="display:none;">
+        <label>Persona quien autoriza el ingreso</label>
+        <select id="inputAutorizaVInt">
+          <option value="">Seleccione persona...</option>
+          <option value="CHUQUILLANQUI DOMINGUEZ, EDWIN FIDEL (12182)">CHUQUILLANQUI DOMINGUEZ, EDWIN FIDEL</option>
+          <option value="REYES VIGO, LUIS ALBERTO (12470)">REYES VIGO, LUIS ALBERTO</option>
+          <option value="ASCHIERO PEREA, ALEJANDRO RENE (12875)">ASCHIERO PEREA, ALEJANDRO RENE</option>
+          <option value="LAZO HINOJOSA, LUIS HUMBERTO (13985)">LAZO HINOJOSA, LUIS HUMBERTO</option>
+          <option value="RODRIGUEZ ROQUE, MARK VALERY (13862)">RODRIGUEZ ROQUE, MARK VALERY</option>
+          <option value="CARMEN ROSA, HUAMAN OCHOA (16236)">CARMEN ROSA, HUAMAN OCHOA</option>
+          <option value="SILUPÚ SANDOVAL, KEYTIN BRIGGIT (16132)">SILUPÚ SANDOVAL, KEYTIN BRIGGIT</option>
+          <option value="GONZALES SOTO, WILFREDO MARTIN (14070)">GONZALES SOTO, WILFREDO MARTIN</option>
+          <option value="CARRERA SANCHEZ, GERMÁN (16238)">CARRERA SANCHEZ, GERMÁN</option>
+          <option value="LEYVA HERRERA, KILDER ORLANDO (24881)">LEYVA HERRERA, KILDER ORLANDO</option>
+          <option value="AVILA RUIZ, ALINA MARTHA (12861)">AVILA RUIZ, ALINA MARTHA</option>
+          <option value="FIGUEROA CALATAYUD, LUIS DAMIAN (12867)">FIGUEROA CALATAYUD, LUIS DAMIAN</option>
+          <option value="MARTICORENA GRANDA, ROBERTO CARLOS (12868)">MARTICORENA GRANDA, ROBERTO CARLOS</option>
+          <option value="YABAR CARDOZO, JUAN ALFREDO (12869)">YABAR CARDOZO, JUAN ALFREDO</option>
+          <option value="ASIN VELA, CLAUDIA PAMELA (14817)">ASIN VELA, CLAUDIA PAMELA</option>
+          <option value="HUIZA LITANO, CESAR ENRIQUE (14978)">HUIZA LITANO, CESAR ENRIQUE</option>
+          <option value="MARIN VASQUEZ, ANDERSON OMAR (15745)">MARIN VASQUEZ, ANDERSON OMAR</option>
+          <option value="DIONICIO ANTUNEZ, GRECIA MELISSA (15764)">DIONICIO ANTUNEZ, GRECIA MELISSA</option>
+          <option value="VICENTE LEIVA, PERCY DAVID (15785)">VICENTE LEIVA, PERCY DAVID</option>
+          <option value="PALOMINO RODRIGUEZ, JULIO CESAR (15188)">PALOMINO RODRIGUEZ, JULIO CESAR</option>
+          <option value="CARRANZA VERAMENDI, JAVIER CONSTANTINO (16320)">CARRANZA VERAMENDI, JAVIER CONSTANTINO</option>
+        </select>
+      </div>
+
       <!-- MOTIVO (for both types) -->
       <div id="motivoSection" style="display:none;">
         <div class="field">
@@ -994,6 +1023,7 @@ function buscarFichaVInt() {
   if(!emp) {
     showToast('Ficha no encontrada en la base de datos', true);
     document.getElementById('userPreview').classList.remove('show');
+    document.getElementById('fieldAutorizaVInt').style.display = 'none';
     document.getElementById('motivoSection').style.display = 'none';
     document.getElementById('operadorSection').style.display = 'none';
     document.getElementById('sigSection').style.display = 'none';
@@ -1044,6 +1074,7 @@ function buscarFichaVInt() {
   document.getElementById('upEquipo').textContent = emp.u || '';
   document.getElementById('upSede').textContent = sede;
   document.getElementById('userPreview').classList.add('show');
+  document.getElementById('fieldAutorizaVInt').style.display = 'block';
   document.getElementById('motivoSection').style.display = 'block';
   document.getElementById('operadorSection').style.display = 'block';
   document.getElementById('sigSection').style.display = 'block';
@@ -1182,6 +1213,13 @@ async function _confirmarIngreso() {
     if(!motivoSed) { showToast('Seleccione el motivo de la visita', true); return; }
     currentUser.motivo = motivoSed;
 
+    // Para visitante interno: guardar persona que autoriza
+    if(currentType === 'visitante_int') {
+      const autoriza = document.getElementById('inputAutorizaVInt').value;
+      if(!autoriza) { showToast('Seleccione la persona quien autoriza el ingreso', true); return; }
+      currentUser.visitaA = autoriza;
+    }
+
     // Validar que no tenga un registro abierto
     const tipoCheck = currentType === 'visitante_int' ? 'VISITANTE_INT' : 'SEDAPAL';
     const regAbierto = registros.find(r => r.tipo===tipoCheck && r.ficha===currentUser.ficha && !r.horaSalida);
@@ -1272,6 +1310,8 @@ function resetForm() {
   document.getElementById('inputFicha').value = '';
   document.getElementById('inputPersonalAutorizado').value = '';
   document.getElementById('inputFichaVInt').value = '';
+  document.getElementById('inputAutorizaVInt').value = '';
+  document.getElementById('fieldAutorizaVInt').style.display = 'none';
   document.getElementById('inputDNI').value = '';
   document.getElementById('inputApellidos').value = '';
   document.getElementById('inputMotivoGeneral').value = '';
@@ -1455,6 +1495,60 @@ function exportPDF() {
     alternateRowStyles: { fillColor:[240,244,248] },
     margin: { left:14, right:14 },
   });
+
+  // Página de firmas
+  const registrosConFirma = registros.filter(r => r.firma);
+  if(registrosConFirma.length > 0) {
+    doc.addPage('l', 'a4');
+    doc.setFillColor(0, 51, 120);
+    doc.rect(0, 0, 297, 20, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(14);
+    doc.setFont('helvetica','bold');
+    doc.text('Firmas de Registro — Centro de Monitoreo', 148, 13, {align:'center'});
+
+    let xPos = 14, yPos = 28;
+    const boxW = 62, boxH = 40, gap = 6;
+    const cols = 4;
+
+    registrosConFirma.forEach((r, idx) => {
+      if(yPos + boxH + 12 > 195) {
+        doc.addPage('l', 'a4');
+        doc.setFillColor(0, 51, 120);
+        doc.rect(0, 0, 297, 20, 'F');
+        doc.setTextColor(255,255,255);
+        doc.setFontSize(14);
+        doc.setFont('helvetica','bold');
+        doc.text('Firmas de Registro — Centro de Monitoreo (cont.)', 148, 13, {align:'center'});
+        xPos = 14; yPos = 28;
+      }
+
+      doc.setDrawColor(180);
+      doc.setLineWidth(0.3);
+      doc.rect(xPos, yPos, boxW, boxH + 10);
+
+      // Nombre y hora
+      doc.setTextColor(0,0,0);
+      doc.setFontSize(6);
+      doc.setFont('helvetica','bold');
+      doc.text(r.nombre.substring(0, 30), xPos + 2, yPos + 4);
+      doc.setFont('helvetica','normal');
+      doc.text(r.horaIngreso + ' | ' + r.tipo, xPos + 2, yPos + 8);
+
+      // Firma imagen
+      try {
+        if(r.firma && r.firma.startsWith('data:image')) {
+          doc.addImage(r.firma, 'PNG', xPos + 2, yPos + 10, boxW - 4, boxH - 4);
+        }
+      } catch(e) {}
+
+      xPos += boxW + gap;
+      if((idx + 1) % cols === 0) {
+        xPos = 14;
+        yPos += boxH + 10 + gap;
+      }
+    });
+  }
 
   // Footer
   const pageCount = doc.internal.getNumberOfPages();
