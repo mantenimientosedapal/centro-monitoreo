@@ -1491,8 +1491,8 @@ function exportPDF() {
     startY: 40,
     head: [['N°','Ingreso','Tipo','Ficha/DNI','Nombre','Área/Empresa','Motivo','Operador','Salida','Perm.','Firma']],
     body: tableData,
-    styles: { fontSize:7, cellPadding:2, font:'helvetica', minCellHeight:18 },
-    headStyles: { fillColor:[0,71,171], textColor:[255,255,255], fontStyle:'bold', fontSize:7, minCellHeight:8 },
+    styles: { fontSize:8, cellPadding:2, font:'helvetica', minCellHeight:16 },
+    headStyles: { fillColor:[0,71,171], textColor:[255,255,255], fontStyle:'bold', fontSize:8, minCellHeight:8 },
     alternateRowStyles: { fillColor:[240,244,248] },
     margin: { left:10, right:10 },
     columnStyles: {
@@ -1514,8 +1514,8 @@ function exportPDF() {
         const reg = registros[data.row.index];
         if(reg && reg.firma && reg.firma.startsWith('data:image')) {
           try {
-            const imgW = 34;
-            const imgH = 14;
+            const imgW = 27;
+            const imgH = 11;
             const x = data.cell.x + 2;
             const y = data.cell.y + 1;
             doc.addImage(reg.firma, 'PNG', x, y, imgW, imgH);
