@@ -1125,7 +1125,16 @@ function clearSig() {
 
 function getSignatureData() {
   if(!hasSigned) return null;
-  return document.getElementById('sigCanvas').toDataURL('image/png');
+  const canvas = document.getElementById('sigCanvas');
+  // Reducir tamaño: crear canvas temporal más pequeño
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = 200;
+  tmpCanvas.height = 60;
+  const tmpCtx = tmpCanvas.getContext('2d');
+  tmpCtx.fillStyle = '#FFFFFF';
+  tmpCtx.fillRect(0, 0, 200, 60);
+  tmpCtx.drawImage(canvas, 0, 0, 200, 60);
+  return tmpCanvas.toDataURL('image/jpeg', 0.5);
 }
 
 // ===================== CONFIRM INGRESO =====================
@@ -1333,7 +1342,19 @@ function resetForm() {
 }
 
 // ===================== REGISTROS STORAGE =====================
-function saveRegistros() { try { localStorage.setItem('sedapal_acceso_cm', JSON.stringify(registros)); } catch(e){} updateStats(); }
+function saveRegistros() {
+  try {
+    localStorage.setItem('sedapal_acceso_cm', JSON.stringify(registros));
+  } catch(e) {
+    console.warn('localStorage lleno, intentando sin firmas...');
+    try {
+      const light = registros.map(r => ({...r, firma: r.firma ? true : null}));
+      localStorage.setItem('sedapal_acceso_cm', JSON.stringify(light));
+      showToast('⚠️ Almacenamiento lleno. Firmas no guardadas localmente (sí en PDF).', true);
+    } catch(e2) { console.error('saveRegistros failed:', e2); }
+  }
+  updateStats();
+}
 function loadRegistros() {
   // Limpieza mensual automática del localStorage
   checkMonthlyClear();
@@ -1512,13 +1533,14 @@ function exportPDF() {
       // Draw signature image in Firma column (index 10)
       if(data.section === 'body' && data.column.index === 10) {
         const reg = registros[data.row.index];
-        if(reg && reg.firma && reg.firma.startsWith('data:image')) {
+        if(reg && reg.firma && (reg.firma.startsWith('data:image/png') || reg.firma.startsWith('data:image/jpeg'))) {
           try {
             const imgW = 27;
             const imgH = 11;
             const x = data.cell.x + 2;
-            const y = data.cell.y + 1;
-            doc.addImage(reg.firma, 'PNG', x, y, imgW, imgH);
+            const y = data.cell.y + 2;
+            const fmt = reg.firma.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+            doc.addImage(reg.firma, fmt, x, y, imgW, imgH);
           } catch(e) {}
         } else {
           doc.setFontSize(6);
