@@ -1126,15 +1126,20 @@ function clearSig() {
 function getSignatureData() {
   if(!hasSigned) return null;
   const canvas = document.getElementById('sigCanvas');
-  // Reducir tamaño: crear canvas temporal más pequeño
-  const tmpCanvas = document.createElement('canvas');
-  tmpCanvas.width = 200;
-  tmpCanvas.height = 60;
-  const tmpCtx = tmpCanvas.getContext('2d');
-  tmpCtx.fillStyle = '#FFFFFF';
-  tmpCtx.fillRect(0, 0, 200, 60);
-  tmpCtx.drawImage(canvas, 0, 0, 200, 60);
-  return tmpCanvas.toDataURL('image/jpeg', 0.5);
+  if(!canvas.width || !canvas.height) return null;
+  try {
+    const tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width = 200;
+    tmpCanvas.height = 60;
+    const tmpCtx = tmpCanvas.getContext('2d');
+    tmpCtx.fillStyle = '#FFFFFF';
+    tmpCtx.fillRect(0, 0, 200, 60);
+    tmpCtx.drawImage(canvas, 0, 0, 200, 60);
+    return tmpCanvas.toDataURL('image/jpeg', 0.5);
+  } catch(e) {
+    console.warn('Firma error:', e);
+    return null;
+  }
 }
 
 // ===================== CONFIRM INGRESO =====================
