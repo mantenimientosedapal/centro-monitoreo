@@ -1011,7 +1011,7 @@ function buscarFicha() {
   document.getElementById('operadorSection').style.display = 'block';
   document.getElementById('sigSection').style.display = 'block';
   document.getElementById('confirmSection').style.display = 'block';
-  clearSig();
+  setTimeout(clearSig, 50);
 }
 
 // ===================== BUSCAR FICHA VISITANTE INTERNO =====================
@@ -1079,7 +1079,7 @@ function buscarFichaVInt() {
   document.getElementById('operadorSection').style.display = 'block';
   document.getElementById('sigSection').style.display = 'block';
   document.getElementById('confirmSection').style.display = 'block';
-  clearSig();
+  setTimeout(clearSig, 50);
 }
 
 // ===================== SIGNATURE =====================
@@ -1118,6 +1118,16 @@ function initSignature() {
 
 function clearSig() {
   const canvas = document.getElementById('sigCanvas');
+  // Resize canvas if it was hidden (width=0)
+  const rect = canvas.parentElement.getBoundingClientRect();
+  if(rect.width > 0) {
+    canvas.width = rect.width;
+    canvas.height = 120;
+    sigCtx.strokeStyle = '#0F172A';
+    sigCtx.lineWidth = 2;
+    sigCtx.lineCap = 'round';
+    sigCtx.lineJoin = 'round';
+  }
   sigCtx.clearRect(0, 0, canvas.width, canvas.height);
   hasSigned = false;
   canvas.classList.remove('signed');
@@ -1338,7 +1348,7 @@ function resetForm() {
   document.getElementById('inputEmpresa').value = '';
   document.getElementById('inputVisita').value = '';
   document.getElementById('userPreview').classList.remove('show');
-  const showSig = (currentType==='externo' || currentType==='operador');
+  const showSig = (currentType==='externo' || currentType==='operador' || currentType==='visitante_int');
   document.getElementById('sigSection').style.display = showSig ? 'block' : 'none';
   document.getElementById('confirmSection').style.display = showSig ? 'block' : 'none';
   document.getElementById('formOperador').style.display = currentType==='operador' ? 'block' : 'none';
